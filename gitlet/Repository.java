@@ -38,6 +38,8 @@ public class Repository {
     public static final File HEAD_path = join(GITLET_DIR, "HEAD");
     public static String HEAD_branch = Utils.readContentsAsString(HEAD_path);
 
+    /** gitlet的暂存区信息, 保存在.gitlet/index文件中 */
+    public static File Stage_path = join(GITLET_DIR, "index");
 
 
     /** 工具函数, 给传入的Commit或者Blob计算git-SHA1哈希值 */
