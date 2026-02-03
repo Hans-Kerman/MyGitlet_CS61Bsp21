@@ -6,29 +6,32 @@ import static gitlet.Utils.*;
 
 public class Stage implements Serializable {
     /** git add和git rm变动的文件, 文件名 -> 哈希值 */
-    private TreeMap<String, String> addFiles = new TreeMap<>();
-    private TreeMap<String, String> rmFiles = new TreeMap<>();
+    TreeMap<String, String> addFiles = new TreeMap<>();
+    TreeMap<String, String> rmFiles = new TreeMap<>();
 
     public TreeMap<String, String> getRmFiles() {
         return rmFiles;
-    }
-
-    public void setRmFiles(TreeMap<String, String> rmFiles) {
-        this.rmFiles = rmFiles;
     }
 
     public TreeMap<String, String> getAddFiles() {
         return addFiles;
     }
 
-    public void setAddFiles(TreeMap<String, String> addFiles) {
-        this.addFiles = addFiles;
+    /** 基础构造函数 */
+    public Stage() {
+        this.addFiles = new TreeMap<>();
+        this.rmFiles = new TreeMap<>();
     }
 
-    public static Stage stage() {
+    /** 从文件中读取Stage暂存区 */
+    public static Stage getStage() {
+        if (!Repository.Stage_path.exists()) {
+            return new  Stage();
+        }
         return readObject(Repository.Stage_path, Stage.class);
     }
 
+    /** 写入暂存区 */
     public void writeStage() {
         writeObject(Repository.Stage_path, this);
     }
