@@ -42,6 +42,14 @@ public class Commit implements Serializable {
     /** 文件列表,存储文件名到git-SHA1的映射 */
     private TreeMap<String, String> blobs;
 
+    public ArrayList<String> getParentCommits() {
+        return parentCommits;
+    }
+
+    public TreeMap<String, String> getBlobs() {
+        return blobs;
+    }
+
     public Commit(String message, ArrayList<String> parentCommits, Date timestamp, TreeMap<String, String> blobs) {
         this.message = message;
         this.parentCommits = parentCommits;
