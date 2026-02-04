@@ -39,6 +39,9 @@ public class Main {
             case "log":
                 Repository.printLog();
                 break;
+            case "global-log":
+                Repository.printGlobalLog();
+                break;
         }
     }
 }

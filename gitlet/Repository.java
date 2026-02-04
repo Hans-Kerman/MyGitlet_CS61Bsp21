@@ -222,4 +222,16 @@ public class Repository {
             curCommit = getCommit(curHash);
         }
     }
+
+    /** global-log
+     *  无序打印Commit历史信息
+     */
+    public static void printGlobalLog() {
+        List<String> commitLists = plainFilenamesIn(COMMITS_DIR);
+        if (commitLists != null) {
+            for (String hash : commitLists) {
+                printCommitLog(getCommit(hash), hash);
+            }
+        }
+    }
 }
