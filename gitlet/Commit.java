@@ -31,16 +31,20 @@ public class Commit implements Serializable {
      */
 
     /** The message of this Commit. */
-    private String message;
+    private final String message;
     /* TODO: fill in the rest of this class. */
     /** 父提交列表, 一个提交可以有多个父提交, 用提交的git-SHA1结果唯一标识 */
-    private ArrayList<String> parentCommits;
+    private final ArrayList<String> parentCommits;
 
     /** 时间戳,使用当地时间(东八区)记录,init使用Unix纪元0点 */
-    private Date timestamp;
+    private final Date timestamp;
 
     /** 文件列表,存储文件名到git-SHA1的映射 */
-    private TreeMap<String, String> blobs;
+    private final TreeMap<String, String> blobs;
+
+    public String getMessage() {
+        return message;
+    }
 
     public ArrayList<String> getParentCommits() {
         return parentCommits;
