@@ -32,6 +32,10 @@ public class Main {
                     Repository.commitToGitlet(args[1]);
                 }
                 break;
+            case "rm":
+                String filename = args[1];
+                Repository.removeFile(filename);
+                break;
         }
     }
 }

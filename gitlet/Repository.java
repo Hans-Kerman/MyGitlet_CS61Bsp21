@@ -168,4 +168,25 @@ public class Repository {
 
         writeContents(join(BRANCH_DIR, getHeadBranchName()), commitHash);
     }
+
+    /** rm
+     * 1. 如果文件被暂存准备添加(git add)，则取消暂存
+     * 2. 如果文件在**当前**commit中，则将它移除，并且从磁盘上删除
+     * 3. 未被暂存或提交则报错
+     */
+    public static void removeFile(String file) {
+        Stage stage = Stage.getStage();
+        Commit lastCommit = getLastCommit();
+
+        if (!stage.addFiles.containsKey(file) && !lastCommit.getBlobs().containsKey(file)) {
+            throw error("No reason to remove the file.");   //任务3
+        }
+
+        stage.addFiles.remove(file);    //任务1
+        if (lastCommit.getBlobs().containsKey(file)) {
+            stage.rmFiles.add(file);    //任务2
+            restrictedDelete(file);
+        }
+        stage.writeStage();
+    }
 }
