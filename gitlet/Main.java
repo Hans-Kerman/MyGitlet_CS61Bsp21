@@ -1,5 +1,7 @@
 package gitlet;
 
+import static gitlet.Utils.*;
+
 /** Driver class for Gitlet, a subset of the Git version-control system.
  *  @author TODO
  */
@@ -22,6 +24,14 @@ public class Main {
                 Repository.addFileToStage(fileName);
                 break;
             // TODO: FILL THE REST IN
+            case "commit":
+                // 基础错误处理：没message
+                if (args.length < 2 || args[1].isBlank()) {
+                    throw error("Please enter a commit message.");
+                } else {
+                    Repository.commitToGitlet(args[1]);
+                }
+                break;
         }
     }
 }

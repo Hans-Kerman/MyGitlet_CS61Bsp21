@@ -2,7 +2,10 @@ package gitlet;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import static gitlet.Utils.*;
 
@@ -38,7 +41,10 @@ public class Repository {
     /* TODO: fill in the rest of this class. */
     /** HEAD指针文件, 在.gitlet/HEAD, 因为不会头指针分离, 直接保存指向的branch */
     public static final File HEAD_path = join(GITLET_DIR, "HEAD");  //HEAD文件路径
-    public static String HEAD_branch = readContentsAsString(HEAD_path);     //取出来的HEAD信息(branch名字的String)
+    //public static String HEAD_branch = readContentsAsString(HEAD_path);
+    public static String getHeadBranchName() {      //取出来的HEAD信息(branch名字的String)
+        return readContentsAsString(HEAD_path);
+    }
 
     /** gitlet的暂存区信息, 保存在.gitlet/index文件中 */
     public static File Stage_path = join(GITLET_DIR, "index");
@@ -53,11 +59,15 @@ public class Repository {
     }
 
     /** 工具函数, 用于把Blob或者Commit数据落盘 */
-    public static void storeBlob(File f) {
-        writeContents(join(BLOBS_DIR, gitSHA1(f)), (Object) readContents(f));
+    public static String storeBlob(File f) {
+        String hash = gitSHA1(f);
+        writeContents(join(BLOBS_DIR, hash), (Object) readContents(f));
+        return hash;
     }
-    public static void storeCommit(Commit commit) {
-        writeObject(join(COMMITS_DIR, gitSHA1(commit)), commit);
+    public static String storeCommit(Commit commit) {
+        String hash = gitSHA1(commit);
+        writeObject(join(COMMITS_DIR, hash), commit);
+        return hash;
     }
 
     /** Init仓库, 创建基本的文件结构, 创建第一个InitCommit并落盘 */
@@ -92,7 +102,7 @@ public class Repository {
     }
     /** 工具函数, 返回最后一个(HEAD所在的)Commit对象 */
     public static Commit getLastCommit() {
-        return getCommitByBranch(HEAD_branch);
+        return getCommitByBranch(getHeadBranchName());
     }
 
     /**  add
@@ -115,9 +125,47 @@ public class Repository {
                 stage.addFiles.remove(file);
         } else {
             storeBlob(filePath);
-            stage.addFiles.put(file, diskUid);
+            stage.addFiles.put(file, diskUid);  //任务1
         }
-        stage.rmFiles.remove(file);
+        stage.rmFiles.remove(file);     //任务3
         stage.writeStage();
+    }
+
+    /** commit
+     * 0. 基础错误处理：stage为空
+     * 1. 完全根据stage“更新”blob映射(深拷贝)
+     * 2. 使用新blob映射、时间、message、原HEAD构建新Commit
+     * 3. Commit、stage文件落盘
+     * 4. 更新HEAD信息
+     */
+    public static void commitToGitlet(String message) {
+        Stage stage = Stage.getStage();
+        if (stage.rmFiles.isEmpty() && stage.addFiles.isEmpty()) {
+            throw error("No changes added to the commit.");
+        }
+
+        Commit lastCommit = getLastCommit();
+        ArrayList<String> parents = new ArrayList<>();
+        TreeMap<String, String> blobs = new TreeMap<>(lastCommit.getBlobs());
+        parents.add(readContentsAsString(join(BRANCH_DIR, getHeadBranchName())));
+        for (Map.Entry<String, String> addBlob : stage.addFiles.entrySet()) {
+            String fileName = addBlob.getKey();
+            String hash = addBlob.getValue();
+            blobs.put(fileName, hash);
+        }
+        for (String rmFile : stage.rmFiles) {
+            blobs.remove(rmFile);
+        }
+
+        Commit thisCommit = new Commit(
+                message,
+                parents,
+                blobs
+        );
+
+        String commitHash = storeCommit(thisCommit);
+        stage.clearStage();
+
+        writeContents(join(BRANCH_DIR, getHeadBranchName()), commitHash);
     }
 }
