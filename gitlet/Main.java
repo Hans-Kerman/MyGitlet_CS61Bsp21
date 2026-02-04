@@ -36,6 +36,9 @@ public class Main {
                 String filename = args[1];
                 Repository.removeFile(filename);
                 break;
+            case "log":
+                Repository.printLog();
+                break;
         }
     }
 }

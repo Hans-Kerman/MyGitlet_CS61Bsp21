@@ -1,5 +1,7 @@
 package gitlet;
 
+import edu.princeton.cs.algs4.SymbolDigraph;
+
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -104,6 +106,10 @@ public class Repository {
     public static Commit getLastCommit() {
         return getCommitByBranch(getHeadBranchName());
     }
+    /** 工具函数, 返回最后一个(HEAD指向的)CommitHash */
+    public static String getHEADCommitHash() {
+        return readContentsAsString(join(BRANCH_DIR, getHeadBranchName()));
+    }
 
     /**  add
      * 1. 覆盖已经暂存的条目
@@ -188,5 +194,32 @@ public class Repository {
             restrictedDelete(file);
         }
         stage.writeStage();
+    }
+
+    /** log
+     *  从新到旧打印Commit历史，沿着第一个parent回溯
+     */
+    private static void printCommitLog(Commit commit, String hash) {
+        List<String> parents = commit.getParentCommits();
+        System.out.println("===");
+        System.out.println("commit " + hash);
+        if (commit.getParentCommits().size() == 2) {
+            System.out.printf("Merge: %s %s\n", parents.get(0).substring(0, 7), parents.get(1).substring(0, 7));
+        }
+        System.out.println("Date: " + commit.getTimestampStr());
+        System.out.println(commit.getMessage());
+        System.out.println();
+    }
+    public static void printLog() {
+        String curHash = getHEADCommitHash();
+        Commit curCommit = getLastCommit();
+        while (true) {
+            printCommitLog(curCommit, curHash);
+            if (curCommit.getParentCommits().isEmpty()) {
+                break;
+            }
+            curHash = curCommit.getParentCommits().get(0);
+            curCommit = getCommit(curHash);
+        }
     }
 }
