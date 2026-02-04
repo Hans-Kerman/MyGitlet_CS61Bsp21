@@ -42,6 +42,10 @@ public class Main {
             case "global-log":
                 Repository.printGlobalLog();
                 break;
+            case "find":
+                String matchMessage = args[1];
+                Repository.findMatchMessage(matchMessage);
+                break;
         }
     }
 }

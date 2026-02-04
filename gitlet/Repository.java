@@ -234,4 +234,24 @@ public class Repository {
             }
         }
     }
+
+    /** find
+     *  查找message并打印完全一致的commit
+     */
+    public static void findMatchMessage(String inputMessage) {
+        List<String> commitLists = plainFilenamesIn(COMMITS_DIR);
+        boolean found = false;
+        if (commitLists != null) {
+            for (String hash : commitLists) {
+                String message = getCommit(hash).getMessage();
+                if (message.equals(inputMessage)) {
+                    found = true;
+                    System.out.println(hash);
+                }
+            }
+        }
+        if (!found) {
+            throw error("Found no commit with that message.");
+        }
+    }
 }
