@@ -71,7 +71,7 @@ public class Commit implements Serializable {
     public static Commit InitCommit () {
         return new Commit(
                 "initial commit",
-                null,
+                new ArrayList<>(),
                 new Date(0),
                 new TreeMap<String, String>()
         );
