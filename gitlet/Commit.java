@@ -57,6 +57,13 @@ public class Commit implements Serializable {
         this.blobs = blobs;
     }
 
+    public Commit(String message, ArrayList<String> parentCommits, TreeMap<String, String> blobs) {
+        this.message = message;
+        this.parentCommits = parentCommits;
+        this.blobs = blobs;
+        this.timestamp = new Date();
+    }
+
     public static Commit InitCommit () {
         return new Commit(
                 "initial commit",
