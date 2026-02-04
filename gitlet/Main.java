@@ -46,6 +46,9 @@ public class Main {
                 String matchMessage = args[1];
                 Repository.findMatchMessage(matchMessage);
                 break;
+            case "status":
+                Repository.printStatus();
+                break;
         }
     }
 }

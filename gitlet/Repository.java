@@ -1,13 +1,9 @@
 package gitlet;
 
-import edu.princeton.cs.algs4.SymbolDigraph;
 
 import java.io.File;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 import static gitlet.Utils.*;
 
@@ -253,5 +249,112 @@ public class Repository {
         if (!found) {
             throw error("Found no commit with that message.");
         }
+    }
+
+    /** status
+     * 完成gitlet status，输出各种状态信息
+     * 已修改但未暂存(下列任选)：
+     *      1.在当前提交中追踪、在工作区更改、没被暂存添加
+     *      2.已暂存添加，工作区与暂存添加区版本不同
+     *      3.已暂存添加，但是工作区中删除
+     *      4.没被暂存删除，但是被跟踪，并且在工作区删除
+     * 未追踪(下列任选)：
+     *      1.在工作区，不被跟踪 且 不被暂存添加
+     *      2.在工作区，(不管是否被跟踪，)但是在暂存删除
+     */
+    private static String isModificationsNotStagedForCommit(
+            String fileName,
+            Commit commit,
+            Stage stage
+    ) {
+        Set<String> commitTrackedFiles = commit.getBlobs().keySet();
+        File filePath = join(CWD, fileName);
+        if (filePath.exists()) {
+            if (commitTrackedFiles.contains(fileName) &&
+                    !gitSHA1(filePath).equals(commit.getBlobs().get(fileName)) &&
+                    !stage.addFiles.containsKey(fileName)
+            ) {
+                return " (modified)";
+            }
+            if (!gitSHA1(filePath).equals(stage.addFiles.get(fileName)) &&
+                    stage.addFiles.containsKey(fileName)) {
+                return " (modified)";
+            }
+        } else {
+            if (stage.addFiles.containsKey(fileName)) {
+                return " (deleted)";
+            }
+            if (!stage.rmFiles.contains(fileName) && commitTrackedFiles.contains(fileName)) {
+                return " (deleted)";
+            }
+        }
+        return "";
+    }
+    public static void printStatus() {
+        Stage stage = Stage.getStage();
+        Commit commit = getLastCommit();
+        Set<String> commitTrackedFiles = commit.getBlobs().keySet();
+        Set<String> CWDFiles;
+        if (plainFilenamesIn(CWD) == null) {
+            CWDFiles = new TreeSet<>();
+        } else {
+            CWDFiles = new TreeSet<>(Objects.requireNonNull(plainFilenamesIn(CWD)));
+        }
+        Set<String> allFiles = new TreeSet<>(stage.addFiles.keySet());
+        allFiles.addAll(commit.getBlobs().keySet());
+        allFiles.addAll(CWDFiles);
+
+        /* branches */
+        System.out.println("=== Branches ===");
+        String headBranchName = getHeadBranchName();
+        TreeSet<String> branches = new TreeSet<>(Objects.requireNonNull(plainFilenamesIn(BRANCH_DIR)));
+        for (String branchName : branches) {
+            if (branchName.equals(headBranchName)) {
+                System.out.println("*"+branchName);
+            } else {
+                System.out.println(branchName);
+            }
+        }
+        System.out.println();
+
+        /* Staged Files */
+        System.out.println("=== Staged Files ===");
+        for (String fileName : new TreeSet<>(stage.addFiles.keySet())) {
+            System.out.println(fileName);
+        }
+        System.out.println();
+
+        /* Removed Files */
+        System.out.println("=== Removed Files ===");
+        for (String fileName : stage.rmFiles) {
+            System.out.println(fileName);
+        }
+        System.out.println();
+
+        /* 已修改未暂存 */
+        System.out.println("=== Modifications Not Staged For Commit ===");
+        for (String fileName : allFiles) {
+            String op = isModificationsNotStagedForCommit(fileName, commit, stage);
+            if (!op.isEmpty()) {
+                System.out.println(fileName+op);
+            }
+        }
+        System.out.println();
+
+        /* 未跟踪 */
+        System.out.println("=== Untracked Files ===");
+        for (String fileName : CWDFiles) {
+            if (!commitTrackedFiles.contains(fileName) &&
+                !stage.addFiles.containsKey(fileName)
+            ) {
+                System.out.println(fileName);
+            }
+            if (commitTrackedFiles.contains(fileName) &&
+                stage.rmFiles.contains(fileName))
+            {
+                System.out.println(fileName);
+            }
+        }
+        System.out.println();
     }
 }
