@@ -61,6 +61,10 @@ public class Main {
                 if (args.length == 2) {
                     Repository.makeBranch(args[1]);
                 }
+            case "rm-branch":
+                if (args.length == 2) {
+                    Repository.removeBranch(args[1]);
+                }
         }
     }
 }

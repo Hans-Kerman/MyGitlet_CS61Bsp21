@@ -455,4 +455,20 @@ public class Repository {
         }
         writeContents(newBranch, HEADCommitHash);
     }
+
+    /** rm-branch
+     *  使用名字删除已经存在的分支(删除分支指针)
+     *  不会修改任何历史Commit
+     */
+    public static void removeBranch(String branchName) {
+        File branchPath = join(BRANCH_DIR, branchName);
+        if (!branchPath.exists()) {
+            throw error("A branch with that name does not exist.");
+        }
+        String HEADBranchName = getHeadBranchName();
+        if (branchName.equals(HEADBranchName)) {
+            throw error("Cannot remove the current branch.");
+        }
+        restrictedDelete(branchPath);
+    }
 }
