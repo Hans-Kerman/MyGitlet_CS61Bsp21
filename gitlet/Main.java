@@ -57,6 +57,10 @@ public class Main {
                 } else if (args.length == 2) {
                     Repository.checkoutWholeBranch(args[1]);
                 }
+            case "branch":
+                if (args.length == 2) {
+                    Repository.makeBranch(args[1]);
+                }
         }
     }
 }

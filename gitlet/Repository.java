@@ -442,4 +442,17 @@ public class Repository {
         stage.writeStage();
         writeContents(HEAD_path, branchName);
     }
+
+    /** branch
+     *  创建给定名字的新分支
+     *  不要更改HEAD指针
+     */
+    public static void makeBranch(String branchName) {
+        String HEADCommitHash = getHEADCommitHash();
+        File newBranch = join(BRANCH_DIR, branchName);
+        if (newBranch.exists()) {
+            throw error("A branch with that name already exists.");
+        }
+        writeContents(newBranch, HEADCommitHash);
+    }
 }
