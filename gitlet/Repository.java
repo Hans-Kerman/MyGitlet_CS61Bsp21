@@ -486,4 +486,47 @@ public class Repository {
         resetToCommit(resetCommit);
         writeContents(join(BRANCH_DIR, HEADBranchName), gitSHA1(resetCommit));
     }
+
+
+
+
+    /******************* merge ***********************/
+
+    private static Commit findSplitPoint(String commitHash1, String commitHash2) {
+        Set<String> visitedBranch1Parents = new HashSet<>();
+
+        Deque<String> branchWaiting = new ArrayDeque<>();
+        branchWaiting.add(commitHash1);
+
+        while (!branchWaiting.isEmpty()) {
+            String commitHash = branchWaiting.remove();
+
+            visitedBranch1Parents.add(commitHash);
+            for (String hash : getCommit(commitHash).getParentCommits()) {
+                if (!visitedBranch1Parents.contains(hash) && !branchWaiting.contains(hash)) {
+                    branchWaiting.add(hash);
+                }
+            }
+        }
+
+        Set<String> visitedBranch2Parents = new HashSet<>();
+        branchWaiting = new ArrayDeque<>();
+        branchWaiting.add(commitHash2);
+        while (!branchWaiting.isEmpty()) {
+            String commitHash = branchWaiting.remove();
+            visitedBranch2Parents.add(commitHash);
+            if (visitedBranch1Parents.contains(commitHash)) {
+                return getCommit(commitHash);
+            }
+            for (String hash : getCommit(commitHash).getParentCommits()) {
+                if (!visitedBranch2Parents.contains(hash) && !branchWaiting.contains(hash)) {
+                    branchWaiting.add(hash);
+                }
+            }
+        }
+        return null;
+    }
+    public static void merge(String mergeInBranch) {
+
+    }
 }
