@@ -402,21 +402,16 @@ public class Repository {
      *  当前分支跟踪但是没在给定分支的文件将被删除，当前分支未跟踪的不能删除
      *  暂存区清空，除非checkout的就是当前分支(HEAD)
      */
-    public static void checkoutWholeBranch(String branchName) {
-        Commit checkoutCommit = getCommitByBranch(branchName);      //分支不存在会在get函数中正确抛出异常
+    private static void resetToCommit(Commit checkoutCommit) {  //辅助函数，用于执行重置逻辑
         Set<String> checkoutCommitTrackedFiles = checkoutCommit.getBlobs().keySet();
         Commit HEADCommit = getLastCommit();
         Set<String> HEADCommitTrackedFiles = HEADCommit.getBlobs().keySet();
         Stage stage = Stage.getStage();
-
-        if (getHeadBranchName().equals(branchName)) {
-            throw error("No need to checkout the current branch.");
-        }
         if (plainFilenamesIn(CWD) != null) {
             for (String fileName : Objects.requireNonNull(plainFilenamesIn(CWD))) {
                 if (    //untracked条件与status统一
                         !HEADCommitTrackedFiles.contains(fileName) && !stage.addFiles.containsKey(fileName) ||  //untracked1
-                        HEADCommitTrackedFiles.contains(fileName) && stage.rmFiles.contains(fileName)           //untracked2
+                                HEADCommitTrackedFiles.contains(fileName) && stage.rmFiles.contains(fileName)           //untracked2
                 ) {
                     if (checkoutCommitTrackedFiles.contains(fileName)){
                         throw error("There is an untracked file in the way; delete it, or add and commit it first.");
@@ -440,6 +435,15 @@ public class Repository {
 
         stage.clearStage();
         stage.writeStage();
+    }
+    public static void checkoutWholeBranch(String branchName) {
+        Commit checkoutCommit = getCommitByBranch(branchName);      //分支不存在会在get函数中正确抛出异常
+
+        if (getHeadBranchName().equals(branchName)) {
+            throw error("No need to checkout the current branch.");
+        }
+
+        resetToCommit(checkoutCommit);
         writeContents(HEAD_path, branchName);
     }
 
