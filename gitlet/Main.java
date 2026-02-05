@@ -69,6 +69,10 @@ public class Main {
                 if (args.length == 2) {
                     Repository.reset(args[1]);
                 }
+            case "merge":
+                if (args.length == 2) {
+                    Repository.merge(args[1]);
+                }
         }
     }
 }
