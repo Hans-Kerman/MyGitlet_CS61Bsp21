@@ -65,6 +65,10 @@ public class Main {
                 if (args.length == 2) {
                     Repository.removeBranch(args[1]);
                 }
+            case "reset":
+                if (args.length == 2) {
+                    Repository.reset(args[1]);
+                }
         }
     }
 }

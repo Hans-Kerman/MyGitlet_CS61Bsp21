@@ -475,4 +475,15 @@ public class Repository {
         }
         restrictedDelete(branchPath);
     }
+
+    /** reset
+     *  所有文件checkout到某个Commit
+     *  改变HEAD
+     */
+    public static void reset(String commitHash) {
+        String HEADBranchName = getHeadBranchName();
+        Commit resetCommit = getCommitByFuzzyHash(commitHash);
+        resetToCommit(resetCommit);
+        writeContents(join(BRANCH_DIR, HEADBranchName), gitSHA1(resetCommit));
+    }
 }
