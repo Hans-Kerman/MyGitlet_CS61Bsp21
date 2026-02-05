@@ -49,6 +49,14 @@ public class Main {
             case "status":
                 Repository.printStatus();
                 break;
+            case "checkout":
+                if (args.length == 3 && args[1].equals("--")) {
+                    Repository.checkoutOneHeadFile(args[2]);
+                } else if (args.length == 4 && args[2].equals("--")) {
+                    Repository.checkoutOneCommitFile(args[1], args[3]);
+                } else if (args.length == 2) {
+                    Repository.checkoutWholeBranch(args[1]);
+                }
         }
     }
 }

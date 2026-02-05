@@ -2,7 +2,6 @@ package gitlet;
 
 
 import java.io.File;
-import java.io.Serializable;
 import java.util.*;
 
 import static gitlet.Utils.*;
@@ -86,16 +85,20 @@ public class Repository {
 
     /** 工具函数, 输入哈希返回Commit对象 */
     public static Commit getCommit(String hash) {
-        List<String> commitsList = plainFilenamesIn(COMMITS_DIR);
-        if (commitsList == null || !commitsList.contains(hash)) {
-            throw error("Internal error searching commit.");
+        File filePath = join(COMMITS_DIR, hash);
+        if (!filePath.exists()) {
+            throw error("No commit with that id exists.");
         } else {
-            return readObject(join(COMMITS_DIR, hash), Commit.class);
+            return readObject(filePath, Commit.class);
         }
     }
     /** 工具函数, 返回指定branch的最后一个Commit对象 */
     public static Commit getCommitByBranch(String branch) {
-        String hash = readContentsAsString(join(BRANCH_DIR, branch));
+        File branchPath = join(BRANCH_DIR, branch);
+        if (!branchPath.exists()) {
+            throw error("No such branch exists.");
+        }
+        String hash = readContentsAsString(branchPath);
         return getCommit(hash);
     }
     /** 工具函数, 返回最后一个(HEAD所在的)Commit对象 */
@@ -105,6 +108,24 @@ public class Repository {
     /** 工具函数, 返回最后一个(HEAD指向的)CommitHash */
     public static String getHEADCommitHash() {
         return readContentsAsString(join(BRANCH_DIR, getHeadBranchName()));
+    }
+    public static Commit getCommitByFuzzyHash(String hash) {
+        if (hash.length() == 40) {
+            return getCommit(hash);
+        } else {
+            List<String> commitsList = plainFilenamesIn(COMMITS_DIR);
+            if (commitsList == null) {
+                throw error("No commit with that id exists.");
+            }
+            String result = commitsList.stream()
+                    .filter(s -> s.startsWith(hash))  // 严格前缀匹配
+                    .findFirst()                         // 找到第一个
+                    .orElse(null);                       // 没有则返回 null（或默认值）
+            if (result == null) {
+                throw error("No commit with that id exists.");
+            }
+            return getCommit(result);
+        }
     }
 
     /**  add
@@ -356,5 +377,69 @@ public class Repository {
             }
         }
         System.out.println();
+    }
+
+    // chekout共有三种用法
+
+    /** 将文件在HEAD中的存档恢复到工作区
+     */
+    public static void checkoutOneHeadFile(String fileName) {
+        checkoutOneCommitFile(getHEADCommitHash(), fileName);
+    }
+
+    /** 将文件在指定Commit的存档恢复到工作区
+     */
+    public static void checkoutOneCommitFile(String commitHash, String fileName) {
+        Commit commit = getCommitByFuzzyHash(commitHash);
+        Set<String> commitTrackedFiles = commit.getBlobs().keySet();
+        if (!commitTrackedFiles.contains(fileName)) {
+            throw error("File does not exist in that commit.");
+        }
+        writeContents(join(CWD, fileName), (Object) readContents(join(BLOBS_DIR, commit.getBlobs().get(fileName))));
+    }
+
+    /** 将给定分支的所有文件恢复，并且切换HEAD为它
+     *  当前分支跟踪但是没在给定分支的文件将被删除，当前分支未跟踪的不能删除
+     *  暂存区清空，除非checkout的就是当前分支(HEAD)
+     */
+    public static void checkoutWholeBranch(String branchName) {
+        Commit checkoutCommit = getCommitByBranch(branchName);      //分支不存在会在get函数中正确抛出异常
+        Set<String> checkoutCommitTrackedFiles = checkoutCommit.getBlobs().keySet();
+        Commit HEADCommit = getLastCommit();
+        Set<String> HEADCommitTrackedFiles = HEADCommit.getBlobs().keySet();
+        Stage stage = Stage.getStage();
+
+        if (getHeadBranchName().equals(branchName)) {
+            throw error("No need to checkout the current branch.");
+        }
+        if (plainFilenamesIn(CWD) != null) {
+            for (String fileName : Objects.requireNonNull(plainFilenamesIn(CWD))) {
+                if (    //untracked条件与status统一
+                        !HEADCommitTrackedFiles.contains(fileName) && !stage.addFiles.containsKey(fileName) ||  //untracked1
+                        HEADCommitTrackedFiles.contains(fileName) && stage.rmFiles.contains(fileName)           //untracked2
+                ) {
+                    if (checkoutCommitTrackedFiles.contains(fileName)){
+                        throw error("There is an untracked file in the way; delete it, or add and commit it first.");
+                    }
+                }
+            }
+        }
+
+        for (String fileName : checkoutCommitTrackedFiles) {    //恢复文件
+            writeContents(
+                    join(CWD, fileName),
+                    (Object) readContents(join(BLOBS_DIR, checkoutCommit.getBlobs().get(fileName)))
+            );
+        }
+
+        for (String fileName : HEADCommit.getBlobs().keySet()) {    //删除文件
+            if (!checkoutCommit.getBlobs().containsKey(fileName) && join(CWD, fileName).exists()) {
+                restrictedDelete(fileName);
+            }
+        }
+
+        stage.clearStage();
+        stage.writeStage();
+        writeContents(HEAD_path, branchName);
     }
 }
