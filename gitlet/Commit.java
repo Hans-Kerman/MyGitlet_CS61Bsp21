@@ -51,6 +51,9 @@ public class Commit implements Serializable {
     }
 
     public TreeMap<String, String> getBlobs() {
+        if (blobs == null) {
+            return new TreeMap<>();
+        }
         return blobs;
     }
 
