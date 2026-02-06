@@ -491,7 +491,12 @@ public class Repository {
 
 
     /******************* merge ***********************/
-
+    /**
+     *  工具函数，寻找给定两个commitHash的同一最近祖先
+     * @param commitHash1 第一个commit的哈希
+     * @param commitHash2 第二个commit的哈希
+     * @return  返回同一最近祖先(Commit)
+     */
     private static Commit findSplitPoint(String commitHash1, String commitHash2) {
         Set<String> visitedBranch1Parents = new HashSet<>();
 
@@ -524,9 +529,101 @@ public class Repository {
                 }
             }
         }
-        return null;
+        return Commit.InitCommit();     //主要用来捂ide嘴
     }
-    public static void merge(String mergeInBranch) {
 
+    /** 执行merge
+     *
+     * @param mergeInBranch 输入要切换过去的目标branch
+     */
+    public static void merge(String mergeInBranch) {
+        Stage stage = Stage.getStage();
+        //检查stage是否非空
+        if (!stage.addFiles.isEmpty() || !stage.rmFiles.isEmpty()) {
+            throw error("You have uncommitted changes.");
+        }
+        //检查分支是否存在
+        if (!join(BRANCH_DIR, mergeInBranch).exists()) {
+            throw error("A branch with that name does not exist.");
+        }
+        //检查是否自己合并
+        if (getHeadBranchName().equals(mergeInBranch)) {
+            throw error("Cannot merge a branch with itself.");
+        }
+
+
+        String targetBranchCommitHash = readContentsAsString(join(BRANCH_DIR, mergeInBranch));//目标分支Commit的哈希
+        Commit sharedAnce = findSplitPoint(getHEADCommitHash(), targetBranchCommitHash);      //分割点Commit
+        String sharedAnceHash = gitSHA1(sharedAnce);                                          //分割点Commit的哈希
+        if (sharedAnceHash.equals(targetBranchCommitHash)) {
+            throw error("Given branch is an ancestor of the current branch.");
+        }
+        if (sharedAnceHash.equals(getHEADCommitHash())) {
+            throw error("Current branch fast-forwarded.");
+        }
+
+        //三种来源的文件映射集合
+        Map<String, String> targetFileMap = getCommit(targetBranchCommitHash).getBlobs();
+        Map<String, String> currentFileMap = getLastCommit().getBlobs();
+        Map<String, String> sharedFileMap = sharedAnce.getBlobs();
+
+        //计算文件并集作为工作文件，是文件名的Set
+        Set<String> checkingFiles = new HashSet<>(targetFileMap.keySet());
+        checkingFiles.addAll(sharedAnce.getBlobs().keySet());
+        checkingFiles.addAll(getLastCommit().getBlobs().keySet());
+        //三种操作：
+        Map<String, String> toCheckout = new HashMap<>();
+        Set<String> toRemove = new HashSet<>();
+        Set<String> toConflict = new HashSet<>();
+
+        for (String fileName : checkingFiles) {
+            //Method 2、3、4、7 -> 文件保持原样，不做操作
+            if (!sharedFileMap.containsKey(fileName)) {     //分割点不存在
+                //  Method 5
+                if (!currentFileMap.containsKey(fileName) &&
+                    targetFileMap.containsKey(fileName)
+                ) {
+                    String targetFileHash = targetFileMap.get(fileName);
+                    toCheckout.put(fileName, targetFileHash);
+                    stage.addFiles.put(fileName, targetFileHash);
+                }
+
+                /**************** Conflict 3 ******************/
+                if(!sharedFileMap.get(fileName).equals(targetFileMap.get(fileName))){
+
+                }
+            } else {        //分割点存在
+                String sharedFileHash = sharedFileMap.get(fileName);    //分割点文件版本
+                //  Method 6
+                if (currentFileMap.get(fileName).equals(sharedFileHash) &&
+                    !targetFileMap.containsKey(fileName)
+                ) {
+                    toRemove.add(fileName);
+                    stage.rmFiles.add(fileName);
+                }
+                //  Method 1
+                if (currentFileMap.get(fileName).equals(sharedFileHash) &&
+                    !targetFileMap.get(fileName).equals(sharedFileHash)
+                ) {
+                    toCheckout.put(fileName, targetFileMap.get(fileName));
+                    stage.addFiles.put(fileName, targetFileMap.get(fileName));
+                }
+
+                /**************** Conflict 1 ******************/
+                if (!currentFileMap.get(fileName).equals(targetFileMap.get(fileName)) &&
+                    !sharedFileMap.get(fileName).equals(targetFileMap.get(fileName)) &&
+                    !currentFileMap.get(fileName).equals(sharedFileMap.get(fileName))
+                ){
+
+                }
+                /**************** Conflict 2 ******************/
+                if (
+                        (!currentFileMap.containsKey(fileName) && !targetFileMap.get(fileName).equals(sharedFileMap.get(fileName))) ||
+                        (!targetFileMap.containsKey(fileName) && !currentFileMap.get(fileName).equals(sharedFileMap.get(fileName)))
+                ) {
+
+                }
+            }
+        }
     }
 }
