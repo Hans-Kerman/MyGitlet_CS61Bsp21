@@ -532,6 +532,32 @@ public class Repository {
         return Commit.InitCommit();     //主要用来捂ide嘴
     }
 
+    /**
+     *  工具函数，给定HEAD和given两个blob的哈希，输出冲突文本用于写入到文件中
+     * @param HEADBlobHash  被合并的当前分支的文件的哈希，如果为空串视为文件删除
+     * @param givenBlobHash 给定的分支的文件的哈希，如果为空串视为文件删除
+     * @return  冲突文本，是直接准备写入文件的Content
+     */
+    private static String conflictContent(String HEADBlobHash, String givenBlobHash) {
+        if (HEADBlobHash.isEmpty()) {
+            return "<<<<<<< HEAD\n" +
+                    "=======\n" +
+                    readContentsAsString(join(BLOBS_DIR, givenBlobHash)) + '\n' +
+                    ">>>>>>>";
+        }
+        if (givenBlobHash.isEmpty()) {
+            return "<<<<<<< HEAD\n" +
+                    readContentsAsString(join(BLOBS_DIR, HEADBlobHash)) + '\n' +
+                    "=======\n" +
+                    ">>>>>>>";
+        }
+        return "<<<<<<< HEAD\n" +
+                readContentsAsString(join(BLOBS_DIR, HEADBlobHash)) + '\n' +
+                "=======\n" +
+                readContentsAsString(join(BLOBS_DIR, givenBlobHash)) + '\n' +
+                ">>>>>>>";
+    }
+
     /** 执行merge
      *
      * @param mergeInBranch 输入要切换过去的目标branch
