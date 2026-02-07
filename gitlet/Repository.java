@@ -616,7 +616,7 @@ public class Repository {
 
                 /**************** Conflict 3 ******************/
                 if(!sharedFileMap.get(fileName).equals(targetFileMap.get(fileName))){
-
+                    toConflict.add(fileName);
                 }
             } else {        //分割点存在
                 String sharedFileHash = sharedFileMap.get(fileName);    //分割点文件版本
@@ -640,14 +640,14 @@ public class Repository {
                     !sharedFileMap.get(fileName).equals(targetFileMap.get(fileName)) &&
                     !currentFileMap.get(fileName).equals(sharedFileMap.get(fileName))
                 ){
-
+                    toConflict.add(fileName);
                 }
                 /**************** Conflict 2 ******************/
                 if (
                         (!currentFileMap.containsKey(fileName) && !targetFileMap.get(fileName).equals(sharedFileMap.get(fileName))) ||
                         (!targetFileMap.containsKey(fileName) && !currentFileMap.get(fileName).equals(sharedFileMap.get(fileName)))
                 ) {
-
+                    toConflict.add(fileName);
                 }
             }
         }
