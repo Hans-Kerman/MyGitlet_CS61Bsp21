@@ -58,22 +58,26 @@ public class Main {
                     } else if (args.length == 2) {
                         Repository.checkoutWholeBranch(args[1]);
                     }
+                    break;
                 case "branch":
                     if (args.length == 2) {
                         Repository.makeBranch(args[1]);
-                    }
+                    }break;
                 case "rm-branch":
                     if (args.length == 2) {
                         Repository.removeBranch(args[1]);
                     }
+                    break;
                 case "reset":
                     if (args.length == 2) {
                         Repository.reset(args[1]);
                     }
+                    break;
                 case "merge":
                     if (args.length == 2) {
                         Repository.merge(args[1]);
                     }
+                    break;
             }
         } catch (GitletException e) {
             throw new RuntimeException(e);
