@@ -154,23 +154,18 @@ public class Repository {
         stage.writeStage();
     }
 
-    /** commit
-     * 0. 基础错误处理：stage为空
-     * 1. 完全根据stage“更新”blob映射(深拷贝)
-     * 2. 使用新blob映射、时间、message、原HEAD构建新Commit
-     * 3. Commit、stage文件落盘
-     * 4. 更新HEAD信息
+    /** 构造commit的辅助函数
+     *
+     * @param message   输入的message
+     * @param parentsHashes 传入父节点们的哈希
      */
-    public static void commitToGitlet(String message) {
-        Stage stage = Stage.getStage();
+    private static void commitHelper(Stage stage, String message, ArrayList<String> parentsHashes) {
         if (stage.rmFiles.isEmpty() && stage.addFiles.isEmpty()) {
             throw error("No changes added to the commit.");
         }
 
         Commit lastCommit = getLastCommit();
-        ArrayList<String> parents = new ArrayList<>();
         TreeMap<String, String> blobs = new TreeMap<>(lastCommit.getBlobs());
-        parents.add(readContentsAsString(join(BRANCH_DIR, getHeadBranchName())));
         for (Map.Entry<String, String> addBlob : stage.addFiles.entrySet()) {
             String fileName = addBlob.getKey();
             String hash = addBlob.getValue();
@@ -182,7 +177,7 @@ public class Repository {
 
         Commit thisCommit = new Commit(
                 message,
-                parents,
+                parentsHashes,
                 blobs
         );
 
@@ -190,6 +185,23 @@ public class Repository {
         stage.clearStage();
 
         writeContents(join(BRANCH_DIR, getHeadBranchName()), commitHash);
+    }
+    /** commit
+     * 0. 基础错误处理：stage为空
+     * 1. 完全根据stage“更新”blob映射(深拷贝)
+     * 2. 使用新blob映射、时间、message、原HEAD构建新Commit
+     * 3. Commit、stage文件落盘
+     * 4. 更新HEAD信息
+     */
+    public static void commitToGitlet(String message) {
+        Stage stage = Stage.getStage();
+
+        Commit lastCommit = getLastCommit();
+        ArrayList<String> parents = new ArrayList<>();
+        TreeMap<String, String> blobs = new TreeMap<>(lastCommit.getBlobs());
+        parents.add(readContentsAsString(join(BRANCH_DIR, getHeadBranchName())));
+
+        commitHelper(stage, message, parents);
     }
 
     /** rm
