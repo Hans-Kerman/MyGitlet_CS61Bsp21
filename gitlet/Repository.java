@@ -605,6 +605,9 @@ public class Repository {
         Set<String> toRemove = new HashSet<>();
         Map<String, String> toConflict = new HashMap<>();
 
+        /**
+         * 第一轮干查询，用于标记操作
+         */
         for (String fileName : checkingFiles) {
             //Method 2、3、4、7 -> 文件保持原样，不做操作continue
             if (!sharedFileMap.containsKey(fileName)) {     //分割点不存在
@@ -669,7 +672,9 @@ public class Repository {
                 }
             }
         }
-
+        /**
+         * 判断是否出现untracked，及时中断打印退出
+         */
         if (plainFilenamesIn(CWD) != null) {
             for (String fileName : Objects.requireNonNull(plainFilenamesIn(CWD))) {
                 if (!currentFileMap.containsKey(fileName) &&
@@ -679,7 +684,9 @@ public class Repository {
                 }
             }
         }
-
+        /**
+         * 进行替换、移除、暂存冲突三种操作并保存暂存区
+         */
         for(Map.Entry<String, String> entry : toCheckout.entrySet()) {
             checkoutOneCommitFile(targetBranchCommitHash, entry.getKey());
             stage.addFiles.put(entry.getKey(), entry.getValue());
@@ -694,5 +701,7 @@ public class Repository {
             addFileToStage(entry.getKey());
         }
         stage.writeStage();
+
+
     }
 }
