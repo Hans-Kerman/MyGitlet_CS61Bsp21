@@ -582,11 +582,13 @@ public class Repository {
         Commit sharedAnce = findSplitPoint(getHEADCommitHash(), targetBranchCommitHash);      //分割点Commit
         String sharedAnceHash = gitSHA1(sharedAnce);                                          //分割点Commit的哈希
         if (sharedAnceHash.equals(targetBranchCommitHash)) {
-            throw error("Given branch is an ancestor of the current branch.");
+            message("Given branch is an ancestor of the current branch.");
+            System.exit(0);
         }
         if (sharedAnceHash.equals(getHEADCommitHash())) {
             resetToCommit(getCommitByFuzzyHash(targetBranchCommitHash));
-            throw error("Current branch fast-forwarded.");
+            message("Current branch fast-forwarded.");
+            System.exit(0);
         }
 
         //三种来源的文件映射集合
