@@ -554,7 +554,7 @@ public class Repository {
         if (HEADBlobHash == null || HEADBlobHash.isEmpty()) {
             return "<<<<<<< HEAD\n" +
                     "=======\n" +
-                    readContentsAsString(join(BLOBS_DIR, givenBlobHash)) + '\n' +
+                    readContentsAsString(join(BLOBS_DIR, givenBlobHash)) +
                     ">>>>>>>";
         }
         if (givenBlobHash == null || givenBlobHash.isEmpty()) {
@@ -708,12 +708,24 @@ public class Repository {
             stage.rmFiles.add(fileToRemove);
             stage.addFiles.remove(fileToRemove);
         }
+        boolean ifPrintConflict = false;
         for(Map.Entry<String, String> entry : toConflict.entrySet()) {
             writeContents(join(CWD, entry.getKey()), entry.getValue());
             addFileToStage(entry.getKey());
+            ifPrintConflict = true;
+        }
+        if (ifPrintConflict) {
+            message("Encountered a merge conflict.");
         }
         stage.writeStage();
 
-
+        ArrayList<String> parents = new ArrayList<>();
+        parents.add(getHEADCommitHash());
+        parents.add(targetBranchCommitHash);
+        commitHelper(
+                stage,
+                String.format("Merged %s into %s.", mergeInBranch, getHeadBranchName()),
+                parents
+        );
     }
 }
