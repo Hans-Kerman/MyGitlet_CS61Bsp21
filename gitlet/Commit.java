@@ -37,7 +37,7 @@ public class Commit implements Serializable {
     private final ArrayList<String> parentCommits;
 
     /** 时间戳,使用当地时间(东八区)记录,init使用Unix纪元0点 */
-    private final Date timestamp;
+    private final String timestamp;
 
     /** 文件列表,存储文件名到git-SHA1的映射 */
     private final TreeMap<String, String> blobs;
@@ -57,7 +57,7 @@ public class Commit implements Serializable {
         return blobs;
     }
 
-    public Commit(String message, ArrayList<String> parentCommits, Date timestamp, TreeMap<String, String> blobs) {
+    public Commit(String message, ArrayList<String> parentCommits, String timestamp, TreeMap<String, String> blobs) {
         this.message = message;
         this.parentCommits = parentCommits;
         this.timestamp = timestamp;
@@ -65,17 +65,20 @@ public class Commit implements Serializable {
     }
 
     public Commit(String message, ArrayList<String> parentCommits, TreeMap<String, String> blobs) {
+        SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.US);
         this.message = message;
         this.parentCommits = parentCommits;
         this.blobs = blobs;
-        this.timestamp = new Date();
+        this.timestamp = formatter.format(new Date());
     }
 
     public static Commit InitCommit () {
+        Date initDate = new Date(0);
+        SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.US);
         return new Commit(
                 "initial commit",
                 new ArrayList<>(),
-                new Date(0),
+                formatter.format(initDate),
                 new TreeMap<String, String>()
         );
     }
