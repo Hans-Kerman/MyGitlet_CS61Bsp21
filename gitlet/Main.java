@@ -80,7 +80,7 @@ public class Main {
                     break;
             }
         } catch (GitletException e) {
-            throw new RuntimeException(e);
+            System.out.println(e.getMessage());
         }
     }
 }
