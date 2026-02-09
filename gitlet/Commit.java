@@ -84,8 +84,7 @@ public class Commit implements Serializable {
     }
 
     public String getTimestampStr() {
-        SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.US);
-        return sdf.format(timestamp);
+        return timestamp;
     }
 
 
