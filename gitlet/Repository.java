@@ -485,7 +485,9 @@ public class Repository {
         if (branchName.equals(HEADBranchName)) {
             throw error("Cannot remove the current branch.");
         }
-        restrictedDelete(branchPath);
+        if (!branchPath.delete()) {
+            throw error("Internal error: Failed to delete the branch file.");
+        }
     }
 
     /** reset
