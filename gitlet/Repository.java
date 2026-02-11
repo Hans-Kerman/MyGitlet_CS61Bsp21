@@ -557,19 +557,19 @@ public class Repository {
             return "<<<<<<< HEAD\n" +
                     "=======\n" +
                     readContentsAsString(join(BLOBS_DIR, givenBlobHash)) +
-                    ">>>>>>>";
+                    ">>>>>>>\n";
         }
         if (givenBlobHash == null || givenBlobHash.isEmpty()) {
             return "<<<<<<< HEAD\n" +
-                    readContentsAsString(join(BLOBS_DIR, HEADBlobHash)) + '\n' +
+                    readContentsAsString(join(BLOBS_DIR, HEADBlobHash)) +
                     "=======\n" +
-                    ">>>>>>>";
+                    ">>>>>>>\n";
         }
         return "<<<<<<< HEAD\n" +
-                readContentsAsString(join(BLOBS_DIR, HEADBlobHash)) + '\n' +
+                readContentsAsString(join(BLOBS_DIR, HEADBlobHash)) +
                 "=======\n" +
-                readContentsAsString(join(BLOBS_DIR, givenBlobHash)) + '\n' +
-                ">>>>>>>";
+                readContentsAsString(join(BLOBS_DIR, givenBlobHash)) +
+                ">>>>>>>\n";
     }
 
     /** 执行merge
