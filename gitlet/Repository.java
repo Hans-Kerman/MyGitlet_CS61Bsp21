@@ -677,6 +677,7 @@ public class Repository {
                                 (targetHash == null && !Objects.equals(currHash, sharedFileHash))
                 ) {
                     toConflict.put(fileName, conflictContent(currHash, targetHash));
+                    continue;
                 }
 
                 //  Method 1
@@ -733,15 +734,15 @@ public class Repository {
         }
         boolean ifPrintConflict = false;
         for(Map.Entry<String, String> entry : toConflict.entrySet()) {
-            writeContents(join(CWD, entry.getKey()), entry.getValue());
-            addFileToStage(entry.getKey());
+            File conflictFile = join(CWD, entry.getKey());
+            writeContents(conflictFile, entry.getValue());
+            stage.addFiles.put(entry.getKey(), storeBlob(conflictFile));
             ifPrintConflict = true;
         }
         if (ifPrintConflict) {
             message("Encountered a merge conflict.");
         }
         stage.writeStage();
-
         ArrayList<String> parents = new ArrayList<>();
         parents.add(getHEADCommitHash());
         parents.add(targetBranchCommitHash);
