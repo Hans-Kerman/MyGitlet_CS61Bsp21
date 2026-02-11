@@ -649,6 +649,13 @@ public class Repository {
                 String sharedFileHash = sharedFileMap.get(fileName);    //分割点文件版本
                 String currHash = currentFileMap.get(fileName);
                 String targetHash = targetFileMap.get(fileName);
+                //  Method 3-1
+                if (!targetFileMap.containsKey(fileName) &&
+                    !currentFileMap.containsKey(fileName)
+                ) {
+                    continue;
+                }
+
                 //  Method 7
                 if (!currentFileMap.containsKey(fileName) &&
                     Objects.equals(targetHash, sharedFileHash)
@@ -663,6 +670,15 @@ public class Repository {
                     toRemove.add(fileName);
                     continue;
                 }
+
+                /**************** Conflict 2 ******************/
+                if (
+                        (currHash == null && !Objects.equals(targetHash, sharedFileHash)) ||
+                                (targetHash == null && !Objects.equals(currHash, sharedFileHash))
+                ) {
+                    toConflict.put(fileName, conflictContent(currHash, targetHash));
+                }
+
                 //  Method 1
                 if (Objects.equals(currHash, sharedFileHash) &&
                     !Objects.equals(targetHash, sharedFileHash)
@@ -671,18 +687,23 @@ public class Repository {
                     continue;
                 }
 
+                //  Method 2
+                if (!Objects.equals(currHash, sharedFileHash) &&
+                    Objects.equals(targetHash, sharedFileHash)
+                ) {
+                    continue;
+                }
+
+                //  Method 3-2
+                if (Objects.equals(currHash, targetHash)) {
+                    continue;
+                }
+
                 /**************** Conflict 1 ******************/
                 if (!Objects.equals(currHash, targetHash) && !Objects.equals(targetHash, sharedFileHash)
                 ){
                     toConflict.put(fileName, conflictContent(currHash, targetHash));
                     continue;
-                }
-                /**************** Conflict 2 ******************/
-                if (
-                        (currHash == null && !Objects.equals(targetHash, sharedFileHash)) ||
-                        (targetHash == null && !Objects.equals(currHash, sharedFileHash))
-                ) {
-                    toConflict.put(fileName, conflictContent(currHash, targetHash));
                 }
             }
         }
