@@ -1,29 +1,24 @@
 package gitlet;
 
-// TODO: any imports you need here
-import static gitlet.Utils.*;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date; // TODO: You'll likely use this in this class
+import java.util.Date;
 import java.util.Locale;
 import java.util.TreeMap;
 
 /** Represents a gitlet commit object.
- *  TODO: It's a good idea to give a description here of what else this Class
- *  does at a high level.
  *  Commit对象包含一个提交的所有信息, 包括:
  *      父提交(们)
  *      时间戳
  *      提示信息
  *      文件列表
  *
- *  @author TODO
+ *  @author buttercat
  */
 public class Commit implements Serializable {
     /**
-     * TODO: add instance variables here.
      *
      * List all instance variables of the Commit class here with a useful
      * comment above them describing what that variable represents and how that
@@ -32,7 +27,6 @@ public class Commit implements Serializable {
 
     /** The message of this Commit. */
     private final String message;
-    /* TODO: fill in the rest of this class. */
     /** 父提交列表, 一个提交可以有多个父提交, 用提交的git-SHA1结果唯一标识 */
     private final ArrayList<String> parentCommits;
 
@@ -57,7 +51,12 @@ public class Commit implements Serializable {
         return blobs;
     }
 
-    public Commit(String message, ArrayList<String> parentCommits, String timestamp, TreeMap<String, String> blobs) {
+    public Commit(
+            String message,
+            ArrayList<String> parentCommits,
+            String timestamp,
+            TreeMap<String,
+                    String> blobs) {
         this.message = message;
         this.parentCommits = parentCommits;
         this.timestamp = timestamp;
@@ -72,7 +71,7 @@ public class Commit implements Serializable {
         this.timestamp = formatter.format(new Date());
     }
 
-    public static Commit InitCommit () {
+    public static Commit initCommit() {
         Date initDate = new Date(0);
         SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.US);
         return new Commit(

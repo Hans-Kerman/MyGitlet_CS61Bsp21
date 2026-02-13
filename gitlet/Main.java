@@ -3,7 +3,7 @@ package gitlet;
 import static gitlet.Utils.*;
 
 /** Driver class for Gitlet, a subset of the Git version-control system.
- *  @author TODO
+ *  @author buttercat
  */
 public class Main {
 
@@ -11,7 +11,6 @@ public class Main {
      *  <COMMAND> <OPERAND1> <OPERAND2> ... 
      */
     public static void main(String[] args) {
-        // TODO: what if args is empty?
         if (args.length == 0) {
             message("Please enter a command.");
             System.exit(0);
@@ -23,21 +22,18 @@ public class Main {
         try {
             switch (firstArg) {
                 case "init":
-                    // TODO: handle the `init` command
                     if (args.length != 1) {
                         badCommandExit();
                     }
-                    Repository.InitRepository();
+                    Repository.initRepository();
                     break;
                 case "add":
-                    // TODO: handle the `add [filename]` command
                     if (args.length != 2) {
                         badCommandExit();
                     }
                     String fileName = args[1];
                     Repository.addFileToStage(fileName);
                     break;
-                // TODO: FILL THE REST IN
                 case "commit":
                     if (args.length != 2) {
                         badCommandExit();

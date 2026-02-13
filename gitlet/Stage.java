@@ -27,15 +27,15 @@ public class Stage implements Serializable {
 
     /** 从文件中读取Stage暂存区 */
     public static Stage getStage() {
-        if (!Repository.Stage_path.exists()) {
+        if (!Repository.STAGE_PATH.exists()) {
             return new  Stage();
         }
-        return readObject(Repository.Stage_path, Stage.class);
+        return readObject(Repository.STAGE_PATH, Stage.class);
     }
 
     /** 写入暂存区 */
     public void writeStage() {
-        writeObject(Repository.Stage_path, this);
+        writeObject(Repository.STAGE_PATH, this);
     }
 
     public void clearStage() {
