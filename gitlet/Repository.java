@@ -632,6 +632,122 @@ public class Repository {
     }
 
     /**
+     * 第一轮干查询，用于标记操作
+     */
+    private static void dryCheckUntracked(
+            Set<String> checkingFiles,
+            Map<String, String> sharedFileMap, Map<String, String> currentFileMap,
+            Map<String, String> targetFileMap,
+            Map<String, String> toCheckout, Set<String> toRemove, Map<String, String> toConflict
+
+    ) {
+        for (String fileName : checkingFiles) {
+            //Method 2、3、4、7 -> 文件保持原样，不做操作continue
+            String currHash = currentFileMap.get(fileName);
+            String targetHash = targetFileMap.get(fileName);
+            if (!sharedFileMap.containsKey(fileName)) {     //分割点不存在
+                //  Method 4
+                if (!targetFileMap.containsKey(fileName)) {
+                    continue;
+                }
+                //  Method 5
+                if (!currentFileMap.containsKey(fileName)
+                        && targetFileMap.containsKey(fileName)
+                ) {
+                    String targetFileHash = targetFileMap.get(fileName);
+                    toCheckout.put(fileName, targetFileHash);
+                    continue;
+                }
+                /**************** Conflict 3 ******************/
+                if (!Objects.equals(currHash, targetHash)) {
+                    toConflict.put(fileName, conflictContent(currHash, targetHash));
+                }
+            } else {        //分割点存在
+                String sharedFileHash = sharedFileMap.get(fileName);    //分割点文件版本
+                //  Method 3-1
+                if (!targetFileMap.containsKey(fileName)
+                        && !currentFileMap.containsKey(fileName)
+                ) {
+                    continue;
+                }
+                //  Method 7
+                if (!currentFileMap.containsKey(fileName)
+                        && Objects.equals(targetHash, sharedFileHash)
+                ) {
+                    continue;
+                }
+                //  Method 6
+                if (Objects.equals(currHash, sharedFileHash)
+                        && !targetFileMap.containsKey(fileName)
+                ) {
+                    toRemove.add(fileName);
+                    continue;
+                }
+                /**************** Conflict 2 ******************/
+                if ((currHash == null && !Objects.equals(targetHash, sharedFileHash))
+                    || (targetHash == null && !Objects.equals(currHash, sharedFileHash))
+                ) {
+                    toConflict.put(fileName, conflictContent(currHash, targetHash));
+                    continue;
+                }
+                //  Method 1
+                if (Objects.equals(currHash, sharedFileHash)
+                        && !Objects.equals(targetHash, sharedFileHash)
+                ) {
+                    toCheckout.put(fileName, targetHash);
+                    continue;
+                }
+                //  Method 2
+                if (!Objects.equals(currHash, sharedFileHash)
+                        && Objects.equals(targetHash, sharedFileHash)
+                ) {
+                    continue;
+                }
+                //  Method 3-2
+                if (!Objects.equals(currHash, targetHash)) {
+                    /************ Conflict 1 ************/
+                    toConflict.put(fileName, conflictContent(currHash, targetHash));
+                }
+            }
+        }
+    }
+
+    private static void doMerge(
+            Map<String, String> toCheckout, Set<String> toRemove, Map<String, String> toConflict,
+            Stage stage,
+            String targetBranchCommitHash, String mergeInBranch
+    ) {
+        for (Map.Entry<String, String> entry : toCheckout.entrySet()) {
+            checkoutOneCommitFile(targetBranchCommitHash, entry.getKey());
+            stage.addFiles.put(entry.getKey(), entry.getValue());
+        }
+        for (String fileToRemove : toRemove) {
+            restrictedDelete(fileToRemove);
+            stage.rmFiles.add(fileToRemove);
+            stage.addFiles.remove(fileToRemove);
+        }
+        boolean ifPrintConflict = false;
+        for (Map.Entry<String, String> entry : toConflict.entrySet()) {
+            File conflictFile = join(CWD, entry.getKey());
+            writeContents(conflictFile, entry.getValue());
+            stage.addFiles.put(entry.getKey(), storeBlob(conflictFile));
+            ifPrintConflict = true;
+        }
+        if (ifPrintConflict) {
+            message("Encountered a merge conflict.");
+        }
+        stage.writeStage();
+        ArrayList<String> parents = new ArrayList<>();
+        parents.add(getHEADCommitHash());
+        parents.add(targetBranchCommitHash);
+        commitHelper(
+                stage,
+                String.format("Merged %s into %s.", mergeInBranch, getHeadBranchName()),
+                parents
+        );
+    }
+
+    /**
      * 执行merge
      *
      * @param mergeInBranch 输入要切换过去的目标branch
@@ -682,106 +798,17 @@ public class Repository {
         Set<String> toRemove = new HashSet<>();
         Map<String, String> toConflict = new HashMap<>();
 
-        /**
-         * 第一轮干查询，用于标记操作
-         */
-        for (String fileName : checkingFiles) {
-            //Method 2、3、4、7 -> 文件保持原样，不做操作continue
-            if (!sharedFileMap.containsKey(fileName)) {     //分割点不存在
-                String currHash = currentFileMap.get(fileName);
-                String targetHash = targetFileMap.get(fileName);
-                //  Method 4
-                if (!targetFileMap.containsKey(fileName)) {
-                    continue;
-                }
+        dryCheckUntracked(checkingFiles, sharedFileMap, currentFileMap, targetFileMap,
+                toCheckout, toRemove, toConflict);
 
-                //  Method 5
-                if (!currentFileMap.containsKey(fileName)
-                        && targetFileMap.containsKey(fileName)
-                ) {
-                    String targetFileHash = targetFileMap.get(fileName);
-                    toCheckout.put(fileName, targetFileHash);
-                    continue;
-                }
-
-                /**************** Conflict 3 ******************/
-                if (!Objects.equals(currHash, targetHash)) {
-                    toConflict.put(fileName, conflictContent(currHash, targetHash));
-                }
-            } else {        //分割点存在
-                String sharedFileHash = sharedFileMap.get(fileName);    //分割点文件版本
-                String currHash = currentFileMap.get(fileName);
-                String targetHash = targetFileMap.get(fileName);
-                //  Method 3-1
-                if (!targetFileMap.containsKey(fileName)
-                        && !currentFileMap.containsKey(fileName)
-                ) {
-                    continue;
-                }
-
-                //  Method 7
-                if (!currentFileMap.containsKey(fileName)
-                        && Objects.equals(targetHash, sharedFileHash)
-                ) {
-                    continue;
-                }
-
-                //  Method 6
-                if (Objects.equals(currHash, sharedFileHash)
-                        && !targetFileMap.containsKey(fileName)
-                ) {
-                    toRemove.add(fileName);
-                    continue;
-                }
-
-                /**************** Conflict 2 ******************/
-                if (
-                        (currHash == null && !Objects.equals(targetHash, sharedFileHash))
-                                || (targetHash == null && !Objects.equals(currHash, sharedFileHash))
-                ) {
-                    toConflict.put(fileName, conflictContent(currHash, targetHash));
-                    continue;
-                }
-
-                //  Method 1
-                if (Objects.equals(currHash, sharedFileHash)
-                        && !Objects.equals(targetHash, sharedFileHash)
-                ) {
-                    toCheckout.put(fileName, targetHash);
-                    continue;
-                }
-
-                //  Method 2
-                if (!Objects.equals(currHash, sharedFileHash)
-                        && Objects.equals(targetHash, sharedFileHash)
-                ) {
-                    continue;
-                }
-
-                //  Method 3-2
-                if (Objects.equals(currHash, targetHash)) {
-                    continue;
-                }
-
-                /**************** Conflict 1 ******************/
-                if (!Objects.equals(currHash, targetHash)
-                        && !Objects.equals(targetHash, sharedFileHash)
-                ) {
-                    toConflict.put(fileName, conflictContent(currHash, targetHash));
-                    continue;
-                }
-            }
-        }
         /**
          * 判断是否出现untracked，及时中断打印退出
          */
         if (plainFilenamesIn(CWD) != null) {
             for (String fileName : Objects.requireNonNull(plainFilenamesIn(CWD))) {
-                if (!currentFileMap.containsKey(fileName)
-                        && (toCheckout.containsKey(fileName)
-                        || toRemove.contains(fileName)
-                        || toConflict.containsKey(fileName))
-                ) {    //untracked File
+                if (!currentFileMap.containsKey(fileName) && (toCheckout.containsKey(fileName)
+                        || toRemove.contains(fileName) || toConflict.containsKey(fileName))
+                ) { //untracked File
                     throw error("There is an untracked file in the way; delete it, or add and "
                             + "commit it first.");
                 }
@@ -790,33 +817,6 @@ public class Repository {
         /**
          * 进行替换、移除、暂存冲突三种操作并保存暂存区
          */
-        for (Map.Entry<String, String> entry : toCheckout.entrySet()) {
-            checkoutOneCommitFile(targetBranchCommitHash, entry.getKey());
-            stage.addFiles.put(entry.getKey(), entry.getValue());
-        }
-        for (String fileToRemove : toRemove) {
-            restrictedDelete(fileToRemove);
-            stage.rmFiles.add(fileToRemove);
-            stage.addFiles.remove(fileToRemove);
-        }
-        boolean ifPrintConflict = false;
-        for (Map.Entry<String, String> entry : toConflict.entrySet()) {
-            File conflictFile = join(CWD, entry.getKey());
-            writeContents(conflictFile, entry.getValue());
-            stage.addFiles.put(entry.getKey(), storeBlob(conflictFile));
-            ifPrintConflict = true;
-        }
-        if (ifPrintConflict) {
-            message("Encountered a merge conflict.");
-        }
-        stage.writeStage();
-        ArrayList<String> parents = new ArrayList<>();
-        parents.add(getHEADCommitHash());
-        parents.add(targetBranchCommitHash);
-        commitHelper(
-                stage,
-                String.format("Merged %s into %s.", mergeInBranch, getHeadBranchName()),
-                parents
-        );
+        doMerge(toCheckout, toRemove, toConflict, stage, targetBranchCommitHash, mergeInBranch);
     }
 }
